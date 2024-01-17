@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1em;
+            text-align: center;
+        }
+
+        #cart {
+            margin: 2em;
+            padding: 2em;
+            background-color: white;
+            border-radius: 8px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 0.5em 0;
+        }
+
+        #total {
+            margin-top: 1em;
+        }
+
+        #discount {
+            margin-top: 0.5em;
+        }
+
+        #amountToPay {
+            margin-top: 0.5em;
+        }
+
+        #clearCart {
+            display: block;
+            margin-top: 1em;
+            text-align: center;
+            text-decoration: none;
+            background-color: #e74c3c;
+            color: white;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Shopping Cart</h1>
+    </header>
+    <div id="cart">
+        <h2>Shopping Cart</h2>
+        <ul id="cartItems"></ul>
+        <p id="total">Total: $0.00 (Quantity: 0)</p>
+        <p id="discount">Discount: -$0.00</p>
+        <p id="amountToPay">Amount to Pay: $0.00 (After $0.00 discount)</p>
+        <p id="shippingFee">Shipping Fee: $0.00</p>
+        <label for="giftWrapper">Add Gift Wrapper ($1 per unit):</label>
+        <input type="checkbox" id="giftWrapper" onchange="updateAmountToPay()">
+        <button id="clearCart" onclick="clearCart()">Clear Cart</button>
+    </div>
+
+    <script>
+        // Get cart data from localStorage
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+        const cartItemsElement = document.getElementById('cartItems');
+        const totalElement = document.getElementById('total');
+        const discountElement = document.getElementById('discount');
+        const amountToPayElement = document.getElementById('amountToPay');
+        const giftWrapperCheckbox = document.getElementById('giftWrapper');
+        const shippingFeeElement = document.getElementById('shippingFee');
+    
+        // Initialize total, discount, additionalDiscount, quantity, and giftWrapperFee variables
+        let total = 0;
+        let discount = 0;
+        let additionalDiscount = 0;
+        let quantity = 0;
+        let giftWrapperFee = 0;
+        let shippingFee = 0;
+    
+        // Display cart items
+        cartItems.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.productName} - $${item.price.toFixed(2)}`;
+            cartItemsElement.appendChild(li);
+            total += item.price;
+            quantity += item.quantity || 1;
+        });
+    
+        // Calculate shipping fees based on the number of units
+        const packagesCount = Math.ceil(quantity / 10);
+        shippingFee = packagesCount * 5;
+    
+        // Check if the number of products exceeds 10 and apply a 5% discount
+        if (quantity > 10) {
+            additionalDiscount = 0.05 * total;
+        }
+    
+        // Check if the number of products exceeds 20 and apply a 10% discount
+        if (quantity > 20) {
+            discount = 0.1 * total;
+        }
+    
+        // Check if the total exceeds $200 and apply a 10% discount
+        if (total > 200) {
+            discount = 0.1 * total;
+        }
+    
+        // Calculate amounts after both discounts
+        const amountToPayWith10Percent = (total - discount).toFixed(2);
+        const amountToPayWith5Percent = (total - additionalDiscount).toFixed(2);
+    
+        // Choose the amount to display based on the comparison
+        let finalAmountToPay;
+        let finalDiscount;
+    
+        if (quantity > 0) {
+            if (amountToPayWith10Percent < amountToPayWith5Percent) {
+                discountElement.textContent = `Discount (10%): -$${discount.toFixed(2)}`;
+                finalDiscount = discount;
+                finalAmountToPay = amountToPayWith10Percent;
+            } else {
+                discountElement.textContent = `Discount (5%): -$${additionalDiscount.toFixed(2)}`;
+                finalDiscount = additionalDiscount;
+                finalAmountToPay = amountToPayWith5Percent;
+            }
+        } else {
+            // Cart is empty, reset values
+            finalAmountToPay = 0;
+            finalDiscount = 0;
+        }
+    
+        // Display total, amount to pay, shipping fee, and chosen discount
+        totalElement.textContent = `Total: $${total.toFixed(2)} (Quantity: ${quantity})`;
+        shippingFeeElement.textContent = `Shipping Fee: $${shippingFee.toFixed(2)}`;
+        updateAmountToPay(); // Initial call to set the default state
+    
+        // Function to update the amount to pay when the checkbox is changed
+        function updateAmountToPay() {
+            // Update giftWrapperFee based on the checkbox state
+            giftWrapperFee = giftWrapperCheckbox.checked ? quantity * 1 : 0;
+    
+            // Update the amount to pay
+            const updatedAmountToPay = (total - finalDiscount + giftWrapperFee + shippingFee).toFixed(2);
+            amountToPayElement.textContent = `Amount to Pay: $${updatedAmountToPay} (After ${finalDiscount.toFixed(2)} discount${giftWrapperFee > 0 ? ` + $${giftWrapperFee.toFixed(2)} Gift Wrapper` : ''} + $${shippingFee.toFixed(2)} Shipping Fee)`;
+        }
+    
+        // Clear cart function
+        function clearCart() {
+            // Clear cart data in localStorage
+            localStorage.removeItem('cartItems');
+    
+            // Reload the page to reflect the changes
+            location.reload();
+        }
+    </script>
+</body>
+</html>
+
